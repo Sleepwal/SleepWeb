@@ -1,25 +1,25 @@
 package frame
 
 import (
-	"fmt"
 	"net/http"
 )
 
 // HandlerFunc 提供给用户，定义用于处理HTTP请求的方法
-type HandlerFunc func(http.ResponseWriter, *http.Request)
+type HandlerFunc func(*Context)
 
 // Engine 实现ServeHTTP接口
 type Engine struct {
-	router map[string]HandlerFunc // 路由
+	router *router // 路由
 }
 
 func New() *Engine {
-	return &Engine{router: make(map[string]HandlerFunc)}
+	return &Engine{
+		router: newRouter(),
+	}
 }
 
 func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
-	key := method + "-" + pattern
-	engine.router[key] = handler
+	engine.router.addRoute(method, pattern, handler)
 }
 
 // GET
@@ -50,10 +50,6 @@ func (engine *Engine) Run(addr string) error {
 // @param w
 // @param req
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	key := req.Method + "-" + req.URL.Path
-	if handler, ok := engine.router[key]; ok {
-		handler(w, req) // 调用处理函数
-	} else {
-		_, _ = fmt.Fprintf(w, "404 NOT FOUND: %s\n", req.URL)
-	}
+	c := newContext(w, req)
+	engine.router.handle(c)
 }
