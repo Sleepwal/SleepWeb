@@ -15,10 +15,16 @@ func main() {
 		c.String(http.StatusOK, "Welcome to %s, %s", c.Path, c.Query("name"))
 	})
 
-	r.POST("/login", func(c *frame.Context) {
+	r.GET("/hello/:name", func(c *frame.Context) {
 		c.JSON(http.StatusOK, frame.J{
-			"username": c.PostForm("username"),
-			"password": c.PostForm("password"),
+			"name": c.Param("name"),
+			"path": c.Path,
+		})
+	})
+
+	r.GET("/assets/*filepath", func(c *frame.Context) {
+		c.JSON(http.StatusOK, frame.J{
+			"file_path": c.Param("filepath"),
 		})
 	})
 
