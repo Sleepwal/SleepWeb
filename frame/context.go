@@ -16,7 +16,10 @@ type Context struct {
 	Method string
 	Params map[string]string
 	// 响应信息
-	StatusConde int
+	StatusCode int
+	// 中间件
+	handlers []HandlerFunc
+	index    int
 }
 
 func newContext(w http.ResponseWriter, req *http.Request) *Context {
@@ -25,6 +28,18 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 		Request: req,
 		Path:    req.URL.Path,
 		Method:  req.Method,
+		index:   -1,
+	}
+}
+
+// Next
+// @Description: 控制权交给下一个中间件
+// @receiver c
+func (c *Context) Next() {
+	c.index++
+	s := len(c.handlers)
+	for ; c.index < s; c.index++ {
+		c.handlers[c.index](c)
 	}
 }
 
@@ -42,7 +57,7 @@ func (c *Context) Query(key string) string {
 }
 
 func (c *Context) Status(code int) {
-	c.StatusConde = code
+	c.StatusCode = code
 	c.Writer.WriteHeader(code)
 }
 
@@ -74,4 +89,9 @@ func (c *Context) HTML(code int, html string) {
 	c.SetHeader("Content-Type", "text/html")
 	c.Status(code)
 	_, _ = c.Writer.Write([]byte(html))
+}
+
+func (c *Context) Fail(code int, err string) {
+	c.index = len(c.handlers)
+	c.JSON(code, J{"message": err})
 }

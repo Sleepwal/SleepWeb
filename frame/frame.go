@@ -2,6 +2,7 @@ package frame
 
 import (
 	"net/http"
+	"strings"
 )
 
 // HandlerFunc 提供给用户，定义用于处理HTTP请求的方法
@@ -9,13 +10,16 @@ type HandlerFunc func(*Context)
 
 // Engine 实现ServeHTTP接口
 type Engine struct {
-	router *router // 路由
+	*RouterGroup
+	router *router        // 路由
+	groups []*RouterGroup // 所有group
 }
 
 func New() *Engine {
-	return &Engine{
-		router: newRouter(),
-	}
+	engine := &Engine{router: newRouter()}
+	engine.RouterGroup = &RouterGroup{engine: engine}
+	engine.groups = []*RouterGroup{engine.RouterGroup}
+	return engine
 }
 
 func (engine *Engine) addRoute(method string, pattern string, handler HandlerFunc) {
@@ -50,6 +54,13 @@ func (engine *Engine) Run(addr string) error {
 // @param w
 // @param req
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	var middlewares []HandlerFunc
+	for _, group := range engine.groups {
+		if strings.HasPrefix(req.URL.Path, group.prefix) { // 该请求适用的中间件
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
+
 	c := newContext(w, req)
 	engine.router.handle(c)
 }
