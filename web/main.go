@@ -1,11 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"frame"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
 )
+
+func main() {
+	//V1_3()
+	V1_4()
+}
+
+func FormatAsDate(t time.Time) string {
+	year, month, day := t.Date()
+	return fmt.Sprintf("%d-%02d-%02d", year, month, day)
+}
+
+func V1_4() {
+	r := frame.New()
+	r.Use(frame.Logger())
+	r.SetFuncMap(template.FuncMap{
+		"FormatAsDate": FormatAsDate,
+	})
+	r.LoadHTMLGlob("templates/*")
+	r.Static("/assets", "./static")
+
+	r.GET("/", func(c *frame.Context) {
+		c.HTML(http.StatusOK, "css.tmpl", nil)
+	})
+
+	r.Run(":8080")
+}
 
 func onlyForV1_3() frame.HandlerFunc {
 	return func(c *frame.Context) {
@@ -18,11 +46,8 @@ func onlyForV1_3() frame.HandlerFunc {
 	}
 }
 
-func main() {
+func V1_3() {
 	r := frame.New()
-	r.GET("/", func(c *frame.Context) {
-		c.HTML(http.StatusOK, `<h1>Hello SleepWeb</h1>`)
-	})
 
 	r.GET("/assets/*filepath", func(c *frame.Context) {
 		c.JSON(http.StatusOK, frame.J{
