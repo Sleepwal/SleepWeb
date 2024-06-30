@@ -11,7 +11,22 @@ import (
 
 func main() {
 	//V1_3()
-	V1_4()
+	//V1_4()
+	V1_5()
+}
+
+func V1_5() {
+	r := frame.Default()
+	r.GET("/", func(c *frame.Context) {
+		c.String(http.StatusOK, "Hello Sleep\n")
+	})
+	// index out of range for testing Recovery()
+	r.GET("/panic", func(c *frame.Context) {
+		names := []string{"Sleep"}
+		c.String(http.StatusOK, names[100])
+	})
+
+	r.Run(":8080")
 }
 
 func FormatAsDate(t time.Time) string {
